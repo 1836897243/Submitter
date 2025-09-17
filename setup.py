@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="JobSubmitor",
+    name="Submitter",
     version="1.0",
     description="A simple job submission tool for managing and scheduling tasks.",
 
