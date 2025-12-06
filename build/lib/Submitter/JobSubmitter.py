@@ -16,8 +16,8 @@ class BaseJobSubmitter(ABC):
 
     def truncate(self, num_items):
         self.queue.truncate(num_items)
-
-
+        
+           
     def addJobs(self, commands):
         """
         批量添加任务到文件队列中
@@ -44,8 +44,6 @@ class BaseJobSubmitter(ABC):
             False（默认）→ 正常流程：任务全部提交 → 等待结束 → 退出
             True → 队列为空后继续重复提交最后一条任务，确保任务持续运行
         """
-
-        assert not self.queue.empty(), "提交失败，任务为空"
         last_command = None
 
         while True:

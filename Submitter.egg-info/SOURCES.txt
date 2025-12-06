@@ -1,0 +1,9 @@
+setup.py
+Submitter/JobSubmitter.py
+Submitter/SafeOffsetFileQueue.py
+Submitter/SlurmJobSubmitter.py
+Submitter/__init__.py
+Submitter.egg-info/PKG-INFO
+Submitter.egg-info/SOURCES.txt
+Submitter.egg-info/dependency_links.txt
+Submitter.egg-info/top_level.txt
