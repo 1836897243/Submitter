@@ -6,16 +6,16 @@ class SlurmJobSubmitter:
     only support for slurm
     only a gpu per job
     '''
-    def __init__(self,file_prefix='',ntasks=70,require_gpu=True, mem=475, partition='gpujl'):   
+    def __init__(self,file_prefix='',ntasks=70, ncpus=70, require_gpu=True, mem=475, partition='gpujl'):
         '''
         for gpu job, only one gpu per job, and execute commands sequentially
         for cpu job, zero gpu per job, execute commands in parallel, and each job use 10 cpus
         '''
-        self.ntasks = ntasks
+        self.ntasks = ntasks # number of concurrent tasks for cpu job, not slurm ntasks
         self.require_gpu = require_gpu
         self.file_prefix = file_prefix
 
-        self.cpus_per_task = 1
+        self.cpus_per_task = ncpus
         self.mem = mem 
         self.partition = partition
         self.gpu_cnt = 4 if require_gpu else 0
@@ -59,7 +59,7 @@ submitter.submit(repeat_last={str(repeat_last)})'''
 #SBATCH --output={self.outdir}/{job_name}.out
 #SBATCH --time=5-15:00:00
 #SBATCH --nodes=1
-#SBATCH --ntasks={self.ntasks}
+#SBATCH --ntasks=1
 #SBATCH --cpus-per-task={self.cpus_per_task}
 #SBATCH --mem={self.mem}G
 #SBATCH --partition={self.partition}

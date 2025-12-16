@@ -41,8 +41,6 @@ class BaseJobSubmitter(ABC):
         从文件队列中持续取任务直到完成。
 
         :param repeat_last: bool
-            False（默认）→ 正常流程：任务全部提交 → 等待结束 → 退出
-            True → 队列为空后继续重复提交最后一条任务，确保任务持续运行
         """
 
         assert not self.queue.empty(), "提交失败，任务为空"
@@ -72,9 +70,6 @@ class BaseJobSubmitter(ABC):
             resource = self._get_available_resource()
             self._submit(command, resource)
 
-            # 若 repeat_last=True，则永远不会 break
-
-        # repeat_last=False 才会进入等待任务结束
         if not repeat_last:
             while self._is_running():
                 time.sleep(6)
