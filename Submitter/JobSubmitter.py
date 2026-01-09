@@ -4,12 +4,12 @@ import os
 from abc import ABC, abstractmethod
 from datetime import datetime
 from .SafeOffsetFileQueue import SafeOffsetFileQueue
-
+import toml
 class BaseJobSubmitter(ABC):
     """抽象基类：定义任务提交和调度的接口"""
     def __init__(self, file_prefix, logfile=None):
         self.queue = SafeOffsetFileQueue(queue_file=f"{file_prefix}_queue.txt",offset_file=f"{file_prefix}_offset.txt")
-        self.logfile = logfile if logfile else "Submiter/job_submitter.log"
+        self.logfile = logfile if logfile else f"Submiter/job_submitter_{file_prefix}.log"
         os.makedirs(os.path.dirname(self.logfile), exist_ok=True)
         if os.path.exists(self.logfile):
             os.remove(self.logfile)
@@ -104,8 +104,13 @@ class CudaJobSubmitter(BaseJobSubmitter):
     """基于 GPU 的任务提交器，按 GPU ID 调度任务"""
     def __init__(self, file_prefix, gpu_ids):
         super().__init__(file_prefix)
-        self.gpu_ids = gpu_ids
         self.cuda_processes = {gpu_id: None for gpu_id in gpu_ids}
+        # save gpu_id to config
+        self.config = f"Submiter/slurm_logs/{file_prefix}_gpu_config.toml"
+        if not os.path.exists("Submiter/slurm_logs"):
+            os.makedirs("Submiter/slurm_logs")
+        with open(self.config, "w") as f:
+            toml.dump({"gpu_ids": gpu_ids}, f)
 
     def _clean_resources(self):
         for gpu_id, proc in self.cuda_processes.items():
@@ -118,6 +123,10 @@ class CudaJobSubmitter(BaseJobSubmitter):
 
     def _get_available_resource(self):
         self._clean_resources()
+        with open(self.config, "r") as f:
+            config_data = toml.load(f)
+        gpu_ids = config_data.get("gpu_ids", [])
+        self.cuda_processes = {gpu_id: self.cuda_processes.get(gpu_id, None) for gpu_id in gpu_ids}
         for gpu_id, proc in self.cuda_processes.items():
             if proc is None:
                 return gpu_id
@@ -144,6 +153,12 @@ class ConcurrentJobSubmitter(BaseJobSubmitter):
         super().__init__(file_prefix)
         self.max_jobs = max_jobs
         self.processes = []
+        self.config = f"Submiter/slurm_logs/{file_prefix}_cpu_config.toml"
+        if not os.path.exists("Submiter/slurm_logs"):
+            os.makedirs("Submiter/slurm_logs")
+        with open(self.config, "w") as f:
+            toml.dump({"max_jobs": max_jobs}, f)
+
 
     def _clean_resources(self):
         for proc in list(self.processes):
@@ -156,6 +171,9 @@ class ConcurrentJobSubmitter(BaseJobSubmitter):
 
     def _get_available_resource(self):
         self._clean_resources()
+        with open(self.config, "r") as f:
+            config_data = toml.load(f)
+        self.max_jobs = config_data.get("max_jobs", self.max_jobs)
         if len(self.processes) < self.max_jobs:
             return len(self.processes)
         return None

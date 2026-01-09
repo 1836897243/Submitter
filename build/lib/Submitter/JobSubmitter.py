@@ -9,15 +9,15 @@ class BaseJobSubmitter(ABC):
     """抽象基类：定义任务提交和调度的接口"""
     def __init__(self, file_prefix, logfile=None):
         self.queue = SafeOffsetFileQueue(queue_file=f"{file_prefix}_queue.txt",offset_file=f"{file_prefix}_offset.txt")
-        self.logfile = logfile if logfile else "Submiter/job_submitter.log"
+        self.logfile = logfile if logfile else f"Submiter/job_submitter_{file_prefix}.log"
         os.makedirs(os.path.dirname(self.logfile), exist_ok=True)
         if os.path.exists(self.logfile):
             os.remove(self.logfile)
 
     def truncate(self, num_items):
         self.queue.truncate(num_items)
-        
-           
+
+
     def addJobs(self, commands):
         """
         批量添加任务到文件队列中
@@ -41,9 +41,9 @@ class BaseJobSubmitter(ABC):
         从文件队列中持续取任务直到完成。
 
         :param repeat_last: bool
-            False（默认）→ 正常流程：任务全部提交 → 等待结束 → 退出
-            True → 队列为空后继续重复提交最后一条任务，确保任务持续运行
         """
+
+        assert not self.queue.empty(), "提交失败，任务为空"
         last_command = None
 
         while True:
@@ -70,9 +70,6 @@ class BaseJobSubmitter(ABC):
             resource = self._get_available_resource()
             self._submit(command, resource)
 
-            # 若 repeat_last=True，则永远不会 break
-
-        # repeat_last=False 才会进入等待任务结束
         if not repeat_last:
             while self._is_running():
                 time.sleep(6)
